@@ -70,12 +70,25 @@ def buscar_contas(documento: str):
     return conta
 
 #atualizar cadastro
-@app.put('/clientes/{documento}')
+@app.patch('/clientes/{documento}')
 def atualizar_cliente(documento: str, nome: str, telefone: str):
     try:
-        atualiza_cliente_db(documento, nome, telefone)
+        cliente_atualizado = atualiza_cliente_db(documento, nome, telefone)
+
+        if cliente_atualizado:
+            return {
+                "documento": documento,
+                "nome": nome,
+                "telefone": telefone,
+            }
+        else:
+            # Caso o documento não exista no banco
+            raise HTTPException(status_code=404, detail="Cliente não encontrado.")
+            
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao atualizar: {e}")
+        # Erros de conexão ou SQL
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar: {str(e)}")
+
     
 #atualizar saldo da conta
 @app.patch('/contas/{numero_conta}/saldo')

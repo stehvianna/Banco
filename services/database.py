@@ -90,18 +90,17 @@ def busca_cliente_por_nome(nome: str) -> list[Dict[str, Any]]:
         return [dict(r) for r in rows]
     
 #atualiza cadastro do client    
-def atualiza_cliente_db(id_cliente: int, nome: str, telefone: str, correntista: bool) -> Dict[str, Any]:
-    correntista_int = 1 if correntista else 0
+def atualiza_cliente_db(documento: str, nome: str, telefone: str) -> Dict[str, Any]:
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            'UPDATE "clientes" SET nome = ?, telefone = ?, correntista = ? WHERE id = ?',
-            (nome, telefone, correntista_int, id_cliente)
+            'UPDATE "clientes" SET nome = ?, telefone = ? WHERE documento = ?',
+            (nome, telefone, documento)
         )
-        row = cursor.fetchone()
-        if row is None:
-            raise ValueError(f'Nenhum cliente encontrado com o CPF {id_cliente}')
-        return dict(row)
+        conn.commit()
+        if cursor.rowcount == 0:
+            return None
+        return (f'Cliente atualizado: \n Documento: {documento},\n Nome: {nome}, \n Telefone: {telefone}\n')
 
 #exclui cliente
 def deletar_cliente(documento: str):

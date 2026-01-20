@@ -18,8 +18,8 @@ def test_busca_por_nome_inexistente():
 
 
 def test_fluxo_cadastro_e_exclusao():
-    doc_valido = "".join([str(random.randint(0, 9)) for _ in range(11)])
-    tel_valido = "11988887777" # Exatamente 11 dígitos
+    doc_valido = "11200099921"
+    tel_valido = "11988887777" 
     
     params = {
         "nome": "Stephanie Teste",
@@ -55,7 +55,7 @@ def test_erro_validacao_documento_invalido():
     params = {
         "nome": "Cliente Erro",
         "telefone": "11999998888",
-        "documento": "123", # Documento inválido (curto)
+        "documento": "123",
         "correntista": True
     }
     response = client.post("/clientes", params=params)

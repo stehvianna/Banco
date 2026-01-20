@@ -85,18 +85,6 @@ def buscar_cliente_nome(nome: str):
     return resposta.json()
 
 
-#atualiza dados do cliente
-@app.put('/clientes/{documento}')
-def atualizar_cliente_app(documento: str, nome: str, telefone: str):
-    params_update_cliente = {
-        "nome": nome,
-        "telefone": telefone
-    }
-    resposta = requests.put(f'{URL_CORE_BANCO}/clientes/{documento}', params = params_update_cliente)
-    if resposta.status_code != 200:
-        raise HTTPException(status_code=resposta.status_code, detail='Erro ao atualizar dados.')
-    return resposta.json()
-
 #atualiza saldo da conta
 @app.patch('/contas/atualizar-saldo/{numero_conta}')
 def atualizar_saldo_app(numero_conta: str, novo_saldo: float):
@@ -110,18 +98,46 @@ def atualizar_saldo_app(numero_conta: str, novo_saldo: float):
         return resposta.json()
     except requests.exceptios.ConnectionError:
         raise HTTPException(status_code = 503, detail = 'Erro ao atualizar seu saldo.')
+    
+#atualizar dados do cliente
+@app.patch('/clientes/atualizar/{documento}')
+def atualizar_cliente_app(documento: str, nome: str, telefone: str):
+    params_update_cliente = {
+        "nome": nome,
+        "telefone": telefone
+    }
+    try:
+        resposta = requests.patch(f'{URL_CORE_BANCO}/clientes/{documento}', params = params_update_cliente)
+        if resposta.status_code != 200:
+            raise HTTPException(status_code = resposta.status_code, detail = 'Erro ao atualizar cliente.')
+        return resposta.json()
+    except requests.exceptions.ConnectionError: 
+        raise HTTPException(status_code=503, detail='Erro de conexão.')
+    except Exception as e:
+        raise HTTPException(status_code = 500, detail = f'Erro: {e}')
 
 
-#cálculo do score
 @app.get('/score/{documento}')
 def calcular_score_app(documento: str):
-    resposta = requests.get(f'{URL_CORE_BANCO}/contas/{documento}')
-    if resposta.status_code != 200:
-        raise HTTPException(status_code=404, detail='Nenhuma conta vinculada ao cliente informado.')
+    try:
+        resposta = requests.get(f'{URL_CORE_BANCO}/contas/{documento}', timeout=5)
+        
+        if resposta.status_code == 404:
+            raise HTTPException(status_code=404, detail='Nenhuma conta vinculada ao cliente informado.')
+        
+        resposta.raise_for_status()
+        dados_conta = resposta.json()
+        
+        saldo = dados_conta.get('saldo_cc', 0)
+        score = calcular_score(saldo)
+        
+        return {
+            "documento": documento, 
+            "score_credito": score
+        }
 
-    dados_conta = resposta.json()
-    score = calcular_score(dados_conta['saldo_cc'])
-    return {'CPF: ': documento, " Score de crédito: ": score}
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=503, detail=f"Erro de conexão com o banco: {e}")
 
 
 #excluir cadastro
