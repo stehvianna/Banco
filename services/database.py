@@ -353,9 +353,9 @@ def busca_investimento_doc(id_cliente: str):
         cursor.execute(
             'SELECT * FROM "investimento" WHERE id_cliente = ?', (id_cliente,)
         )
-        row = cursor.fetchall()
-        if row:
-            return dict(row)
+        rows = cursor.fetchall()
+        if rows:
+            return [dict(row) for row in rows]
         else:
             return None
 
