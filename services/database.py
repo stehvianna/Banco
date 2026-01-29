@@ -301,7 +301,8 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
             raise ValueError(f'O CPF {id_cliente} não está associado à nenhum investidor.')
         #verificar se o cliente tem saldo disponível para investir
         try:
-            saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,))
+            saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+            saldo = float(saldo[0])
             if valor_investido > saldo:
                 raise ValueError('Saldo insuficiente para realizar o investimento.')
             else:
@@ -321,11 +322,15 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
         investimento_salvo = cursor.lastrowid
         cursor.execute('SELECT * FROM "investimento" WHERE id_investimento = ?', (id_investimento,))
         row = cursor.fetchone()
+        
+        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+        patrimonio = float(patrimonio[0])
+
 
         patrimonio += valor_investido
         if row:
-            cursor.execute('UPDATE 1 FROM "contas" set saldo_cc = ? WHERE id_cliente = ?', (saldo, id_cliente,))
-            cursor.execute('UPDATE 1 FROM "investidor" SET patrimonio = ? WHERE id_cliente = ?', (patrimonio, id_cliente,))
+            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE id_cliente = ?', (saldo, id_cliente,))
+            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE id_cliente = ?', (patrimonio, id_cliente,))
             conn.commit()
 
         return dict(row)
@@ -358,13 +363,16 @@ def busca_investimento_doc(id_cliente: str):
 def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bool, tipo: TipoEnum, id_cliente: str):
     with get_connection() as conn:
         cursor = conn.cursor()
-        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE id_cliente = ?', (id_cliente,))
-        valor_investido = cursor.execute('SELECT valor_investido from "investimento" WHERE id_investimento = ?', (id_investimento,))
+        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+        patrimonio = float(patrimonio[0])
+        valor_investido = cursor.execute('SELECT valor_investido from "investimento" WHERE id_investimento = ?', (id_investimento,)).fetchone()
+        valor_investido = float(valor_investido[0])
         novo_valor += valor_investido
 
         if tipo == 'RENDA FIXA':
             try:
-                saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,))
+                saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+                saldo = float(saldo[0])
                 if novo_valor > saldo:
                     raise ValueError('Saldo insuficiente para realizar o investimento.')
             except sqlite3.IntegrityError as e:
@@ -380,6 +388,7 @@ def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bo
 # #excluir investimento
 def retirada_investimento_db(id_investimento: str, valor_retirada: float, id_cliente: str):
     valor = busca_investimento_db(id_investimento).get('valor_investido')
+    valor = float(valor)
     #verifica se a retirada é maior do que o valor investido
     if valor < valor_retirada:
         raise Exception('Saldo insuficiente para retirada.')
