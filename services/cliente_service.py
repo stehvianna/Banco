@@ -1,6 +1,6 @@
 from services.database import busca_cliente, inserir_cliente
 
-def validar_cliente(nome: str, telefone: str, documento: str, correntista: bool) -> bool:
+def validar_cliente(nome: str, telefone: str, documento: str, correntista: bool, investidor: bool) -> bool:
     if not nome or len(nome) < 3:
         raise ValueError('Insira um nome válido.')
     if not telefone or len(telefone) != 11:
@@ -10,8 +10,8 @@ def validar_cliente(nome: str, telefone: str, documento: str, correntista: bool)
     
     return True
 
-def validacao_cadastro(nome: str, telefone: str, documento: str, correntista: bool):
-    if validar_cliente(nome, telefone, documento, correntista):
-        inserir_cliente(nome, telefone, documento, correntista)
+def validacao_cadastro(nome: str, telefone: str, documento: str, correntista: bool, investidor:bool):
+    if validar_cliente(nome, telefone, documento, correntista, investidor):
+        inserir_cliente(nome, telefone, documento, correntista, investidor)
     else:
         raise ValueError('Dados do cliente inválidos.')
