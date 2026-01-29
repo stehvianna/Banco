@@ -13,7 +13,7 @@ from services.database import (
     create_tables, 
     busca_cliente, 
     busca_cliente_por_nome,
-    excluir_investimento_db, 
+    retirada_investimento_db,
     inserir_cliente as inserir_cliente_db, 
     nova_conta, 
     cadastrar_investidor_db, 
@@ -205,7 +205,7 @@ def deletar_investimento(id_investimento: str, id_cliente: str, valor_investido:
         investimento = busca_investimento_db(id_investimento)
         if not investimento:
             raise HTTPException(status_code = 404, detail = 'Investimento não encontrado.')
-        excluir_investimento_db(id_investimento, valor_investido, id_cliente)
+        retirada_investimento_db(id_investimento, valor_investido, id_cliente)
         return ('Investimento excluído com sucesso.')
     except Exception as e:
         raise HTTPException(status_code = 500, detail = f'Erro ao excluir investimento: {e}')

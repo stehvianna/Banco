@@ -384,14 +384,23 @@ def retirada_investimento_db(id_investimento: str, valor_retirada: float, id_cli
     if valor < valor_retirada:
         raise Exception('Saldo insuficiente para retirada.')
     else:
+        valor -= valor_retirada
+        saldo_conta_atualizado = busca_conta(id_cliente).get('saldo_cc') + valor_retirada
+        patrimonio_atualizado = busca_investidor_db(id_cliente).get('patrimonio') - valor
+
         with get_connection() as conn:
             conn.execute("PRAGMA foreign_keys = ON;")
             cursor = conn.cursor()
             cursor.execute(
-                'DELETE FROM "investimento" WHERE id_investimento = ?', (id_investimento)
+                'UPDATE "investimentos" SET valor_investido = ? WHERE id_investimento = ?', (valor, id_investimento,)
             )
+            #atualizar o saldo da conta com o valor do saque
+            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE id_cliente = ?', (saldo_conta_atualizado, id_cliente,))
+            #atualizar patrimonio do investidor
+            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE id_cliente = ?', (patrimonio_atualizado, id_cliente,))
+
             conn.commit()
-        return (f'Investimento {id_investimento} excluído com sucesso!')
+        return (f'Uma retirada no valor de R${valor} foi iniciada. Verifique o saldo em conta.')
 
 
 if __name__ == "__main__":

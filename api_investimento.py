@@ -71,7 +71,7 @@ def busca_investimento_pelo_doc(id_cliente: str, id_investidor = Depends(login_i
     
     return resposta.json()
 
-@app.patch('{URL_CORE_BANCO}/investimento/atualizar/{id_investimento}')
+@app.patch('/investimento/atualizar/{id_investimento}')
 def atualizar_inv(id_investimento: str, valor_investido: str, ativo: bool, tipo: TipoEnum, id_investidor = Depends(login_investimentos)):
     params_update_investimento = {
         "id_investimento" : id_investimento,
