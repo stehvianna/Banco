@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyInvest ✨ Dashboard Girly</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS: O "Look" do Projeto --- */
+        :root {
+            --pink-light: #FFD1DC;
+            --pink-medium: #FFB6C1;
+            --pink-dark: #FF69B4;
+            --bg-color: #FFF5F7;
+            --blue-accent: #B0E0E6;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px; width: 100%; max-width: 1100px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 10px 15px rgba(255, 182, 193, 0.2);
+            border: 2px solid var(--pink-light);
+        }
+
+        h1, h2 { color: var(--pink-dark); }
+
+        input, select {
+            width: 100%; padding: 10px; margin: 8px 0;
+            border-radius: 12px; border: 1px solid var(--pink-light);
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%; padding: 12px; margin-top: 10px;
+            background: var(--pink-medium); color: white;
+            border: none; border-radius: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+        }
+
+        button:hover { background: var(--pink-dark); }
+
+        .res {
+            background: #fdfdfd; padding: 10px; margin-top: 10px;
+            border-radius: 10px; font-size: 0.8rem;
+            border: 1px dashed var(--pink-medium);
+            white-space: pre-wrap; display: none;
+            max-height: 200px; overflow-y: auto;
+        }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 10;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2);
+        }
+        .modal-content {
+            background: white; margin: 5% auto; padding: 30px;
+            border-radius: 25px; width: 420px; border: 3px solid var(--pink-light);
+        }
+
+        /* Seções Dinâmicas */
+        .section-extra {
+            display: none;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 15px;
+            border: 1px dashed var(--pink-medium);
+        }
+        
+        #fields_correntista { background: #F0F8FF; border-color: var(--blue-accent); }
+        #fields_investidor { background: #FFF0F5; border-color: var(--pink-medium); }
+
+        .checkbox-group {
+            display: flex; gap: 20px; margin: 15px 0; font-weight: 300;
+        }
+        
+        .label-title { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+    <h1>PyInvest ✨</h1>
+    <p>Dashboard de Orquestração Financeira</p>
+
+    <div class="container">
+        <div class="card">
+            <h2>👤 Clientes</h2>
+            <input type="text" id="doc_busca" placeholder="Documento (CPF)">
+            <button onclick="buscarCliente()">Buscar Cliente</button>
+            <button onclick="abrirModal()" style="background: none; color: var(--pink-dark); border: 1px solid var(--pink-dark);">Novo Cadastro</button>
+            <div id="res_busca" class="res"></div>
+        </div>
+
+        <div class="card">
+            <h2>💰 Conta e Score</h2>
+            <input type="text" id="doc_score" placeholder="CPF para Score/Conta">
+            <button onclick="verScore()">Ver Score de Crédito</button>
+            <button onclick="verConta()">Ver Número da Conta</button>
+            <div id="res_score" class="res"></div>
+        </div>
+
+        <div class="card">
+            <h2>📈 Investimentos</h2>
+            <input type="text" id="id_inv" placeholder="CPF Investidor">
+            <button onclick="listarInvestimentos()">Listar Meus Ativos</button>
+            <hr style="border: 0.5px solid var(--pink-light); margin: 15px 0;">
+            
+            <select id="tipo_atv">
+                <option value="RENDA FIXA">Renda Fixa</option>
+                <option value="ACOES">Ações</option>
+                <option value="FUNDOS">Fundos de Investimento</option>
+                <option value="CRIPTO">Criptomoedas</option>
+            </select>
+            
+            <input type="number" id="vlr_atv" placeholder="Valor R$">
+            <button onclick="medirInvestimento()">Investir Agora ✨</button>
+            <div id="res_inv" class="res"></div>
+        </div>
+    </div>
+
+    <div id="modalCad" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0">Novo Cadastro 🎀</h2>
+            <input type="text" id="c_nome" placeholder="Nome Completo">
+            <input type="text" id="c_tel" placeholder="Telefone">
+            <input type="text" id="c_doc" placeholder="Documento (CPF)">
+            
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="c_corr" onchange="toggleFormFields()"> Correntista</label>
+                <label><input type="checkbox" id="c_inv" onchange="toggleFormFields()"> Investidor</label>
+            </div>
+
+            <div id="fields_correntista" class="section-extra">
+                <span class="label-title" style="color: #4682B4;">DADOS BANCÁRIOS</span>
+                <input type="number" id="c_saldo" placeholder="Saldo Inicial R$" value="0">
+            </div>
+
+            <div id="fields_investidor" class="section-extra">
+                <span class="label-title" style="color: var(--pink-dark);">DADOS DE INVESTIMENTO</span>
+                <input type="email" id="c_email" placeholder="E-mail">
+                <input type="number" id="c_patri" placeholder="Patrimônio Total R$">
+                <select id="c_perfil">
+                    <option value="CONSERVADOR">Conservador</option>
+                    <option value="MODERADO">Moderado</option>
+                    <option value="ARROJADO">Arrojado</option>
+                </select>
+            </div>
+
+            <button onclick="salvarNovoCliente()" style="background: var(--pink-dark); margin-top: 15px;">Finalizar Registro ✨</button>
+            <button onclick="fecharModal()" style="background:#eee; color: #666;">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const API_APP = "http://localhost:8000";
+        const API_INV = "http://localhost:8002";
+
+        function abrirModal() { document.getElementById('modalCad').style.display = 'block'; }
+        
+        function fecharModal() { 
+            document.getElementById('modalCad').style.display = 'none'; 
+            document.getElementById('fields_investidor').style.display = 'none';
+            document.getElementById('fields_correntista').style.display = 'none';
+            document.getElementById('c_corr').checked = false;
+            document.getElementById('c_inv').checked = false;
+        }
+        
+        function toggleFormFields() {
+            const isInv = document.getElementById('c_inv').checked;
+            const isCorr = document.getElementById('c_corr').checked;
+            document.getElementById('fields_investidor').style.display = isInv ? 'block' : 'none';
+            document.getElementById('fields_correntista').style.display = isCorr ? 'block' : 'none';
+        }
+
+        function mostrar(id, data) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function buscarCliente() {
+            const doc = document.getElementById('doc_busca').value;
+            try {
+                const r = await fetch(`${API_APP}/clientes/${doc}`);
+                const d = await r.json();
+                mostrar('res_busca', d);
+            } catch (e) { alert("Erro ao buscar cliente."); }
+        }
+
+        async function salvarNovoCliente() {
+            const dados = {
+                nome: document.getElementById('c_nome').value,
+                telefone: document.getElementById('c_tel').value,
+                documento: document.getElementById('c_doc').value,
+                correntista: document.getElementById('c_corr').checked,
+                investidor: document.getElementById('c_inv').checked
+            };
+
+            if (dados.correntista) dados.saldo_cc = document.getElementById('c_saldo').value || 0;
+            if (dados.investidor) {
+                dados.email = document.getElementById('c_email').value;
+                dados.patrimonio = document.getElementById('c_patri').value;
+                dados.perfil = document.getElementById('c_perfil').value;
+            }
+
+            const params = new URLSearchParams(dados);
+            try {
+                const r = await fetch(`${API_APP}/clientes?${params.toString()}`, { method: 'POST' });
+                const d = await r.json();
+                if (r.ok) {
+                    alert("Cliente cadastrado! ✨💖");
+                    fecharModal();
+                    mostrar('res_busca', d);
+                } else {
+                    alert("Erro: " + JSON.stringify(d.detail));
+                }
+            } catch (e) { alert("Erro de conexão."); }
+        }
+
+        async function verScore() {
+            const doc = document.getElementById('doc_score').value;
+            const r = await fetch(`${API_APP}/score/${doc}`);
+            const d = await r.json();
+            mostrar('res_score', d);
+        }
+
+        async function verConta() {
+            const doc = document.getElementById('doc_score').value;
+            const r = await fetch(`${API_APP}/contas/numero/${doc}`);
+            const d = await r.json();
+            mostrar('res_score', d);
+        }
+
+        async function listarInvestimentos() {
+            const id = document.getElementById('id_inv').value;
+            const r = await fetch(`${API_INV}/investimento/${id}`);
+            const d = await r.json();
+            mostrar('res_inv', d);
+        }
+
+        async function medirInvestimento() {
+            const id = document.getElementById('id_inv').value;
+            const tipo = document.getElementById('tipo_atv').value;
+            const valor = document.getElementById('vlr_atv').value;
+            
+            // encodeURIComponent cuida dos espaços no "RENDA FIXA" para a URL
+            const url = `${API_INV}/investimento/novo?id_cliente=${id}&tipo=${encodeURIComponent(tipo)}&valor_investido=${valor}&ativo=true`;
+            
+            try {
+                const r = await fetch(url, { method: 'POST' });
+                const d = await r.json();
+                if (r.ok) {
+                    alert("Investimento realizado! 📈");
+                    mostrar('res_inv', d);
+                } else {
+                    mostrar('res_inv', d);
+                }
+            } catch (e) { alert("Erro no investimento."); }
+        }
+    </script>
+</body>
+</html>

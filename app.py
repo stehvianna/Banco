@@ -9,10 +9,20 @@ from models.schemas import ClienteIn, InvestidorIn
 from services.cliente_investidor_service import validar_investidor, validar_cliente_conta
 from models.schemas import PerfilEnum
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(title = 'PyInvest')
 
 URL_CORE_BANCO = "http://localhost:8001"
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Em produção, coloque o endereço do seu front
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 #cadastrar cliente

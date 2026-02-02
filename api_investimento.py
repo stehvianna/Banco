@@ -6,6 +6,7 @@ from models.schemas import RENTABILIDADE_PERFIL, InvestidorIn, PerfilEnum, TipoE
 import requests
 from services.database import busca_investidor_db, cadastrar_investidor_db, atualiza_investidor_db, excluir_investidor_db, create_tables
 from services.investimento_service import validacao_investimento
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -14,13 +15,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title= 'PyInvest', lifespan= lifespan)
 
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 def login_investimentos(id_cliente: str):
-    try: 
-        autorizado = busca_investidor_db(id_cliente)
-        if not autorizado:
-            raise HTTPException(status_code = 404, detail = 'Acesso não autorizado.')
-    except Exception as e: 
-        raise Exception(f'Erro ao autenticar: {e}')
+    autorizado = busca_investidor_db(id_cliente)
+    if not autorizado:
+        raise HTTPException(status_code = 403, detail = 'Acesso não autorizado.')
     return id_cliente
 
 #cadastrar investimento
