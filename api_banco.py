@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from multiprocessing import Value
 import uvicorn
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -168,9 +169,9 @@ def deletar_investidor(id_cliente: str):
 
 #novo investimento
 @app.post('/investimento/novo')
-def novo_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool):
+def novo_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool, ticker: str = None):
     try:
-        investimento = validacao_investimento(id_cliente, tipo, valor_investido, ativo)
+        investimento = validacao_investimento(id_cliente, tipo, valor_investido, ativo, ticker)
         if investimento:
             investimento = novo_investimento_db(id_cliente, tipo, valor_investido, rentabilidade, ativo)
         return investimento
@@ -180,23 +181,27 @@ def novo_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, r
 #atualizar investimento
 @app.patch('investimento/atualizar/{id_investimento}')
 def atualizar_investimento(id_investimento: str, tipo: TipoEnum, valor_investido: float, ativo: bool):
-    try:
-        investimento_atualizado = atualiza_investimento_db(id_investimento, tipo, valor_investido, ativo)
+    tipo_investimento = busca_investimento_db(id_investimento).get('tipo')
+    if tipo_investimento != 'RENDA_FIXA':
+        raise ValueError('Impossível alterar investimentos em renda variável. Tente vender os ativos.')
+    else: 
+        try:
+            investimento_atualizado = atualiza_investimento_db(id_investimento, tipo, valor_investido, ativo)
 
-        if investimento_atualizado:
-            return{
-                "id_investimento" : id_investimento,
-                "tipo" : tipo,
-                "valor_investido" : valor_investido,
-                "ativo" : ativo
-            }
+            if investimento_atualizado:
+                return{
+                    "id_investimento" : id_investimento,
+                    "tipo" : tipo,
+                    "valor_investido" : valor_investido,
+                    "ativo" : ativo
+                }
 
-        else:
-            raise HTTPException(status_code = 404, detail = 'Investimento não encontrado.')
+            else:
+                raise HTTPException(status_code = 404, detail = 'Investimento não encontrado.')
 
-    except Exception as e:
-        raise HTTPException(status_code = 500, detail = f'Erro ao atualizar investimento: {e}')
-
+        except Exception as e:
+            raise HTTPException(status_code = 500, detail = f'Erro ao atualizar investimento: {e}')
+    
 
 #deletar investimento
 @app.delete('/investimento/excluir/{id_investimento}')

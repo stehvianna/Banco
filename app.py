@@ -19,7 +19,7 @@ URL_CORE_BANCO = "http://localhost:8001"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Em produção, coloque o endereço do seu front
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -179,19 +179,18 @@ def atualizar_cliente_app(documento: str, nome: str, telefone: str):
     except Exception as e:
         raise HTTPException(status_code = 500, detail = f'Erro: {e}')
 
-#busca cliente pelo doc
-@app.get('/score/{documento}')
+#cálculo do score de crédito
+@app.get('contas/score')
 def calcular_score_app(documento: str):
     try:
-        resposta = requests.get(f'{URL_CORE_BANCO}/contas/{documento}', timeout=5)
+        resposta = requests.get(f'{URL_CORE_BANCO}/contas/{documento}')
         
         if resposta.status_code == 404:
-            raise HTTPException(status_code=404, detail='Nenhuma conta vinculada ao cliente informado.')
+             raise HTTPException(status_code=404, detail='Conta não localizada.')
         
-        resposta.raise_for_status()
         dados_conta = resposta.json()
+        saldo = dados_conta.get('saldo_cc')
         
-        saldo = dados_conta.get('saldo_cc', 0)
         score = calcular_score(saldo)
         
         return {
@@ -200,8 +199,7 @@ def calcular_score_app(documento: str):
         }
 
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=503, detail=f"Erro de conexão com o banco: {e}")
-
+        raise HTTPException(status_code=503, detail=f"Erro de conexão com o servidor api_banco: {e}")
 
 #excluir cadastro
 @app.delete('/clientes/excluir/{documento}')

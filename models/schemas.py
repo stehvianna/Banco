@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 class PerfilEnum(str, Enum):
@@ -61,3 +61,4 @@ class InvestimentoIn(BaseModel):
     valor_investido: float
     rentabilidade: float
     ativo: bool
+    ticker: Optional[str] = None

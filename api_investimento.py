@@ -32,8 +32,9 @@ def login_investimentos(id_cliente: str):
 
 #cadastrar investimento
 @app.post('/investimento/novo')
-def criar_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, ativo: bool, id_investidor = Depends(login_investimentos)):
-    rentabilidade = RENTABILIDADE_PERFIL.get(busca_investidor(id_cliente).get('perfil'))
+def criar_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, ativo: bool, ticker: str = None, id_investidor = Depends(login_investimentos)):
+    if tipo == TipoEnum.renda_fixa:
+        rentabilidade = RENTABILIDADE_PERFIL.get(busca_investidor(id_cliente).get('perfil'))
     try: 
         validacao_investimento(id_cliente, tipo, valor_investido, ativo)
     except Exception as e:
@@ -52,7 +53,8 @@ def criar_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, 
         "tipo" : tipo,
         "valor_investido" : valor_investido,
         "rentabilidade" : rentabilidade,
-        "ativo" : ativo
+        "ativo" : ativo,
+        "ticker" : ticker
     }
 
     try: 

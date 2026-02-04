@@ -62,9 +62,10 @@ def create_tables() -> None:
                 id_investimento TEXT PRIMARY KEY NOT NULL UNIQUE,
                 id_cliente TEXT NOT NULL,
                 tipo TEXT NOT NULL,
+                ticker TEXT,
                 valor_investido REAL NOT NULL DEFAULT 0.0,
                 data_aplicacao TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-                rentabilidade DECIMAL NOT NULL,
+                rentabilidade DECIMAL,
                 ativo INTEGER NOT NULL CHECK(ativo IN (0,1)),
                 CONSTRAINT tipo_valido CHECK (tipo IN ('RENDA FIXA', 'ACOES', 'FUNDOS', 'CRIPTO'))
             )
@@ -289,7 +290,7 @@ def busca_investidor_db(id_cliente: str):
         
 
 #criar novo investimento
-def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool):
+def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool, ticker: str = None):
     ativo = 1 if ativo else 0
     id_investimento = str(uuid.uuid4())
     with get_connection() as conn:
@@ -313,8 +314,8 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
 
         try:
             cursor.execute(
-                'INSERT INTO "investimento" (id_investimento, id_cliente, tipo, valor_investido, rentabilidade, ativo) VALUES (?,?,?,?,?,?)', 
-                (id_investimento, id_cliente, tipo, valor_investido, rentabilidade, ativo) 
+                'INSERT INTO "investimento" (id_investimento, id_cliente, tipo, ticker, valor_investido, rentabilidade, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+                (id_investimento, id_cliente, tipo, ticker, valor_investido, rentabilidade, ativo) 
             )
         except sqlite3.IntegrityError as e:
             raise ValueError(f'Impossível criar investimento: {e}')
@@ -339,7 +340,7 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
 def busca_investimento_db(id_investimento: str):
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT id_investimento, id_cliente, valor_investido, rentabilidade, data_aplicacao, tipo, ativo FROM "investimento" where id_investimento = ?', (id_investimento,))
+        cursor.execute('SELECT id_investimento, id_cliente, ticker,  valor_investido, rentabilidade, data_aplicacao, tipo, ativo FROM "investimento" where id_investimento = ?', (id_investimento,))
         row = cursor.fetchone()
         if row:
             return dict(row)
