@@ -1,4 +1,5 @@
 
+from math import e
 from multiprocessing import Value
 import sqlite3
 from pathlib import Path
@@ -77,7 +78,7 @@ def create_tables() -> None:
 
 
 
-#cadastrar cliente novo
+#cadastrar cliente novode
 def inserir_cliente(nome: str, telefone: str, documento: str, correntista: bool, investidor: bool) -> Dict[str, Any]:
     # sqlite não tem bool: converter para int
     correntista_int = 1 if correntista else 0
@@ -142,22 +143,35 @@ def atualiza_cliente_db(documento: str, nome: str, telefone: str) -> Dict[str, A
 
 #exclui cliente
 def deletar_cliente(documento: str):
-    saldo = busca_conta(documento).get('saldo')
-    if saldo != 0:
-        raise Exception('Impossível excluir uma conta com saldo.')
-    else:
-        with get_connection() as conn:
+    dados_conta = busca_conta(documento)
+    if dados_conta:
+        saldo = dados_conta.get('saldo_cc', 0)
+    if float(saldo) > 0:
+        raise ValueError('Impossível excluir uma conta com saldo.')
+    dados_investidor = busca_investidor_db(documento)
+    if dados_investidor:
+        patrimonio = dados_investidor.get('patrimonio', 0)
+        if float(patrimonio) > 0:
+            raise ValueError('Impossível excluir cadastro: ainda há patrimônio investido.')
+    with get_connection() as conn:
+        try:
             conn.execute("PRAGMA foreign_keys = ON;")
             cursor = conn.cursor()
-            cursor.execute(
-                'DELETE FROM "clientes" WHERE documento = ?', (documento,)
-            )
+            cursor.execute('DELETE FROM "contas" WHERE id_cliente = ?', (documento,))
+            cursor.execute('DELETE FROM "investidor" WHERE id_cliente = ?', (documento,))
+            cursor.execute('DELETE FROM "clientes" WHERE documento = ?', (documento,))
+
             if cursor.rowcount == 0:
-                raise ValueError(f'Cliente com o CPF {documento} não encontrado.')
-            else:
-                return 'Cliente excluído com sucesso.'
+                print('Nenhum cliente encontrado com o CPF informado.')
+                return False
+            conn.commit()
+            return True, 'Cliente excluído com sucesso!'
             return True
-        conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+    
+
 
 
 #cria conta
@@ -204,6 +218,7 @@ def busca_conta(documento: str):
             return dict(row)
         else:
             return None
+        
         
 #atualizar saldo da conta
 def atualizar_saldo_db(numero_conta: str, novo_saldo: float) -> Dict[str, Any]:
@@ -257,24 +272,6 @@ def atualiza_investidor_db(id_cliente: str, telefone: str, email: str, patrimoni
             return None
         return(f'Cliente atualizado: \n CPF: {id_cliente}, \n Email: {email}, \n Telefone: {telefone}, \n Patrimônio: {patrimonio}, \n Perfil: {perfil}')
 
-#excluir cadastro do investidor
-def excluir_investidor_db(id_cliente: str):
-    saldo = busca_conta(id_cliente).get('saldo')
-    if saldo != 0:
-        raise Exception('Impossível excluir cadastro com saldo na conta.')
-    else:
-        with get_connection() as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            cursor = conn.cursor()
-            cursor.execute(
-                'DELETE FROM "investidor" WHERE id_cliente = ?', (id_cliente)
-            )
-            if cursor.rowcount == 0:
-                raise ValueError('Cliente não encontrado.')
-            else:
-                return 'Cliente excluído com sucesso.'
-            return True
-        conn.commit()
        
 #buscar cadastro do investidor pelo documento
 def busca_investidor_db(id_cliente: str):

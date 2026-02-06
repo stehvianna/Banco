@@ -1,152 +1,191 @@
 const API_BASE = "http://localhost:8000";
 
-// Funções de Controle de Interface
+// --- CONTROLE DE INTERFACE ---
 function abrirModal(id) {
     document.getElementById(id).style.display = "block";
 }
 
 function fecharModal(id) {
     document.getElementById(id).style.display = "none";
-    const resultArea = document.getElementById(id).querySelector('.result-area');
-    if (resultArea) resultArea.style.display = 'none';
+    // Limpa os campos de resultado ao fechar
+    const results = document.querySelectorAll('.result-area');
+    results.forEach(res => {
+        res.style.display = 'none';
+        res.innerText = '';
+        res.style.color = ""; // Reseta a cor para o padrão
+    });
 }
 
-// Fecha o modal ao clicar fora dele
 window.onclick = (e) => {
     if (e.target.className === "modal") fecharModal(e.target.id);
 };
 
 // Exibição condicional de campos no cadastro
-const checkCorrentista = document.getElementById("is_correntista");
-const checkInvestidor = document.getElementById("is_investidor");
+document.getElementById("is_correntista").onchange = function() {
+    document.getElementById("extra_banco").style.display = this.checked ? "block" : "none";
+};
+document.getElementById("is_investidor").onchange = function() {
+    document.getElementById("extra_investimento").style.display = this.checked ? "block" : "none";
+};
 
-if (checkCorrentista) {
-    checkCorrentista.onchange = function() {
-        document.getElementById("extra_banco").style.display = this.checked ? "block" : "none";
+// --- 1. BUSCA POR NOME ---
+const btnNome = document.getElementById("btnBuscarClientePorNome");
+if (btnNome) {
+    btnNome.onclick = async () => {
+        const nome = document.getElementById("busca_nome").value.trim();
+        const resDiv = document.getElementById("output");
+        resDiv.style.display = "block";
+        resDiv.innerText = "Buscando...";
+
+        try {
+            const response = await fetch(`${API_BASE}/clientes/busca/nome?nome=${encodeURIComponent(nome)}`);
+            const data = await response.json();
+            resDiv.innerText = response.ok ? JSON.stringify(data, null, 2) : "Erro: " + data.detail;
+        } catch (err) {
+            resDiv.innerText = "Erro de conexão com o servidor.";
+        }
     };
 }
 
-if (checkInvestidor) {
-    checkInvestidor.onchange = function() {
-        document.getElementById("extra_investimento").style.display = this.checked ? "block" : "none";
-    };
-}
-
-// --- FUNÇÃO DE SCORE (AJUSTADA PARA A NOVA ROTA) ---
+// --- 2. CÁLCULO DE SCORE ---
 document.getElementById("formScore").onsubmit = async (e) => {
     e.preventDefault();
-    const identificador = document.getElementById("score_input").value;
+    const documento = document.getElementById("score_input").value.trim();
     const resDiv = document.getElementById("resScore");
-
     resDiv.style.display = "block";
-    resDiv.innerText = "Processando consulta...";
+    resDiv.innerText = "Calculando...";
 
     try {
-        // AJUSTE AQUI: Mudamos de /score/id para /contas/score?id_cliente=...
-        // Ou se você definiu como /contas/score/{id}, use: `${API_BASE}/contas/score/${identificador}`
-        const response = await fetch(`${API_BASE}/contas/score?id_cliente=${identificador}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
+        const response = await fetch(`${API_BASE}/contas/score/${documento}`);
+        const data = await response.json();
+        if (response.ok) {
+            resDiv.innerText = `Pontuação de Crédito: ${data.score_credito}`;
+        } else {
+            resDiv.innerText = "Erro: " + data.detail;
+        }
+    } catch (err) {
+        resDiv.innerText = "Erro de conexão.";
+    }
+};
 
+// --- 3. EXCLUIR CADASTRO ---
+document.getElementById("formExcluir").onsubmit = async (e) => {
+    e.preventDefault();
+    const documento = document.getElementById("excluir_doc").value.trim();
+    const resDiv = document.getElementById("resExcluir");
+    resDiv.style.display = "block";
+    resDiv.innerText = "Processando exclusão...";
+
+    try {
+        const response = await fetch(`${API_BASE}/clientes/excluir/${documento}`, { method: 'DELETE' });
         const data = await response.json();
 
         if (response.ok) {
-            const pontuacao = data.score_credito || data.score || "Não retornado";
-            resDiv.innerText = `Resultado: ${pontuacao}`;
+            resDiv.style.color = "#2ecc71";
+            resDiv.innerText = typeof data === 'string' ? data : "Cadastro encerrado com sucesso!";
+            e.target.reset();
         } else {
-            resDiv.innerText = "Erro: " + (data.detail || "Informação não localizada.");
+            resDiv.style.color = "#e74c3c";
+            resDiv.innerText = "Erro: " + (data.detail || "Falha na exclusão.");
         }
     } catch (err) {
-        console.error("Erro na requisição:", err);
-        resDiv.innerText = "Erro de conexão. Verifique o servidor e o CORS.";
+        resDiv.style.color = "#e74c3c";
+        resDiv.innerText = "Erro de conexão ao servidor.";
     }
 };
 
-// --- CADASTRO DE CLIENTE ---
+// --- 4. ATUALIZAR SALDO ---
+document.getElementById("formSaldo").onsubmit = async (e) => {
+    e.preventDefault();
+    const conta = document.getElementById("s_conta").value.trim();
+    const valor = document.getElementById("s_valor").value;
+    const resDiv = document.getElementById("resSaldo");
+    resDiv.style.display = "block";
+
+    try {
+        const res = await fetch(`${API_BASE}/contas/atualizar-saldo/${conta}?novo_saldo=${valor}`, { method: 'PATCH' });
+        const data = await res.json();
+        resDiv.innerText = res.ok ? "Saldo atualizado!" : "Erro: " + data.detail;
+    } catch (err) {
+        resDiv.innerText = "Erro de conexão.";
+    }
+};
+
+// --- 5. CADASTRO DE CLIENTE (CORRIGIDO) ---
 document.getElementById("formCadastro").onsubmit = async (e) => {
     e.preventDefault();
-    const params = new URLSearchParams({
+    const resDiv = document.getElementById("resCadastro");
+    resDiv.style.display = "block";
+    resDiv.style.color = ""; // Reseta cor
+    resDiv.innerText = "Cadastrando...";
+
+    const isCorrentista = document.getElementById("is_correntista").checked;
+    const isInvestidor = document.getElementById("is_investidor").checked;
+
+    // Criamos o objeto de parâmetros base
+    const paramsObj = {
         nome: document.getElementById("reg_nome").value,
         telefone: document.getElementById("reg_tel").value,
         documento: document.getElementById("reg_doc").value,
-        correntista: document.getElementById("is_correntista").checked,
-        investidor: document.getElementById("is_investidor").checked
-    });
+        correntista: isCorrentista,
+        investidor: isInvestidor
+    };
 
-    if (document.getElementById("is_investidor").checked) {
-        params.append('email', document.getElementById("reg_email").value);
-        params.append('patrimonio', document.getElementById("reg_patrimonio").value);
-        params.append('perfil', document.getElementById("reg_perfil").value);
+    // Adiciona opcionais se for investidor para evitar erro 422 no FastAPI
+    if (isInvestidor) {
+        paramsObj.email = document.getElementById("reg_email")?.value || "";
+        paramsObj.patrimonio = document.getElementById("reg_patrimonio")?.value || 0;
+        paramsObj.perfil = document.getElementById("reg_perfil")?.value || "CONSERVADOR";
     }
 
+    const params = new URLSearchParams(paramsObj);
+
     try {
-        const res = await fetch(`${API_BASE}/clientes?${params.toString()}`, { method: 'POST' });
+        // Como o app.py espera Query Params no @app.post('/clientes'), enviamos na URL
+        const res = await fetch(`${API_BASE}/clientes?${params.toString()}`, { 
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        const data = await res.json();
+
         if (res.ok) {
-            alert("Cadastro realizado com sucesso.");
-            fecharModal("modalCadastro");
-            e.target.reset();
+            resDiv.style.color = "#2ecc71";
+            resDiv.innerText = "Sucesso! Cliente cadastrado.";
+            e.target.reset(); // Limpa o form
+            setTimeout(() => fecharModal("modalCadastro"), 2000);
         } else {
-            const errorData = await res.json();
-            alert("Erro: " + errorData.detail);
+            resDiv.style.color = "#e74c3c";
+            resDiv.innerText = "Erro: " + (data.detail || "Erro no cadastro.");
         }
     } catch (err) {
-        alert("Erro de conexão ao tentar cadastrar.");
+        resDiv.style.color = "#e74c3c";
+        resDiv.innerText = "Erro de conexão.";
     }
 };
 
-// --- BUSCA POR DOCUMENTO ---
+// --- 6. BUSCA DOCUMENTO & CONTA ---
 document.getElementById("formBuscaDoc").onsubmit = async (e) => {
     e.preventDefault();
-    const doc = document.getElementById("b_doc").value;
+    const doc = document.getElementById("b_doc").value.trim();
     const resDiv = document.getElementById("resBusca");
-
+    resDiv.style.display = "block";
     try {
         const res = await fetch(`${API_BASE}/clientes/${doc}`);
         const data = await res.json();
-        resDiv.style.display = "block";
-        resDiv.innerText = res.ok ? JSON.stringify(data, null, 2) : "Cliente não encontrado.";
-    } catch (err) {
-        alert("Erro de conexão ao buscar documento.");
-    }
+        resDiv.innerText = res.ok ? JSON.stringify(data, null, 2) : "Não encontrado.";
+    } catch (err) { resDiv.innerText = "Erro de conexão."; }
 };
 
-// --- ATUALIZAR SALDO ---
-document.getElementById("formSaldo").onsubmit = async (e) => {
-    e.preventDefault();
-    const conta = document.getElementById("s_conta").value;
-    const valor = document.getElementById("s_valor").value;
-
-    try {
-        const res = await fetch(`${API_BASE}/contas/atualizar-saldo/${conta}?novo_saldo=${valor}`, { 
-            method: 'PATCH' 
-        });
-        if (res.ok) {
-            alert("Saldo atualizado com sucesso.");
-            fecharModal("modalSaldo");
-        } else {
-            const d = await res.json();
-            alert("Erro: " + d.detail);
-        }
-    } catch (err) {
-        alert("Erro de conexão ao atualizar saldo.");
-    }
-};
-
-// --- CONSULTAR NÚMERO DA CONTA ---
 document.getElementById("formConta").onsubmit = async (e) => {
     e.preventDefault();
-    const doc = document.getElementById("c_doc").value;
+    const doc = document.getElementById("c_doc").value.trim();
     const resDiv = document.getElementById("resConta");
-
+    resDiv.style.display = "block";
     try {
         const res = await fetch(`${API_BASE}/contas/numero/${doc}`);
         const data = await res.json();
-        resDiv.style.display = "block";
-        resDiv.innerText = data['Conta: '] ? `Conta localizada: ${data['Conta: ']}` : "Conta não encontrada para este documento.";
-    } catch (err) {
-        alert("Erro de conexão ao localizar conta.");
-    }
+        // Ajuste para bater com o retorno {'Conta: ': valor} do app.py
+        resDiv.innerText = data['Conta: '] ? `Conta: ${data['Conta: ']}` : "Não localizada.";
+    } catch (err) { resDiv.innerText = "Erro de conexão."; }
 };

@@ -18,7 +18,6 @@ from services.database import (
     inserir_cliente as inserir_cliente_db, 
     nova_conta, 
     cadastrar_investidor_db, 
-    excluir_investidor_db, 
     atualiza_investidor_db, 
     busca_investidor_db,
     novo_investimento_db
@@ -54,6 +53,8 @@ def busca_cliente_documento(documento: str):
         raise HTTPException(status_code= 404, detail = 'Cliente não encontrado.')
     return cliente
 
+
+
 #cadastrar cliente
 @app.post('/clientes')
 def cadastro_cliente(nome: str, telefone: str, documento: str, correntista: bool, investidor: bool):
@@ -67,10 +68,10 @@ def cadastro_cliente(nome: str, telefone: str, documento: str, correntista: bool
         raise HTTPException(status_code= 400, detail= f'Impossível cadastrar cliente. Erro: {e}')
 
 #excluir cliente
-@app.delete('/clientes/{documento}')
-def excluir_cliente(documento: str):
+@app.delete('/clientes/{id_cliente}')
+def excluir_cliente_api(id_cliente: str):
     try:
-        resultado = deletar_cliente(documento)
+        resultado = deletar_cliente(id_cliente)
         return 'Cadastro excluído com sucesso.'
     except HTTPException:
         raise
@@ -153,19 +154,6 @@ def procurar_investidor(id_cliente: str):
     if not investidor:
         raise HTTPException(status_code = 404, detail = 'Investidor não encontrado.')
     return investidor
-
-
-#excluir cadastro do investidor
-@app.delete('/clientes/investidor/{id_cliente}')
-def deletar_investidor(id_cliente: str):
-    try:
-        investidor = busca_investidor_db(id_cliente)
-        if not investidor:
-            raise HTTPException(status_code = 404, detail = 'Investidor não encontrado.')
-        excluir_investidor_db(id_cliente)
-        return('Investidor excluído com sucesso.')
-    except Exception as e:
-        raise HTTPException(status_code = 500, detail = f'Erro ao excluir investidor: {e}')
 
 #novo investimento
 @app.post('/investimento/novo')

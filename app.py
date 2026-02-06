@@ -53,7 +53,7 @@ def cadastrar_cliente(nome: str, telefone: str, documento: str, correntista: boo
     }
 
     try:    
-        resposta = requests.post(f'{URL_CORE_BANCO}/clientes', params=params_cliente, timeout=8)
+        resposta = requests.post(f'{URL_CORE_BANCO}/clientes', params = params_cliente, timeout=8)
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=503, detail=f'Erro ao cadastrar cliente: {e}')
 
@@ -180,7 +180,7 @@ def atualizar_cliente_app(documento: str, nome: str, telefone: str):
         raise HTTPException(status_code = 500, detail = f'Erro: {e}')
 
 #cálculo do score de crédito
-@app.get('contas/score')
+@app.get('/contas/score/{documento}')
 def calcular_score_app(documento: str):
     try:
         resposta = requests.get(f'{URL_CORE_BANCO}/contas/{documento}')
@@ -202,15 +202,19 @@ def calcular_score_app(documento: str):
         raise HTTPException(status_code=503, detail=f"Erro de conexão com o servidor api_banco: {e}")
 
 #excluir cadastro
-@app.delete('/clientes/excluir/{documento}')
-def delete_cliente(documento: str):
-    resposta = requests.delete(f'{URL_CORE_BANCO}/clientes/{documento}')
-    if resposta.status_code == 200 or resposta.status_code == 204:
-        return 'Cadastro excluído com sucesso.'
+@app.delete('/clientes/excluir/{id_cliente}')
+def delete_cliente(id_cliente: str):
     try:
-        detail = resposta.json().get('detail', 'Erro ao excluir cadastro.')
-    except Exception as e:
-        raise Exception(f'Erro inesperado: {e}')
+        #verifica o saldo da conta antes da exclusão
+        resposta_conta = requests.get(f'{URL_CORE_BANCO}/contas/{id_cliente}')
+        if resposta_conta.status_code != 200:
+            raise HTTPException(status_code = resposta_conta.status_code, detail = f'Erro inesperado: {resposta_conta.get('detail')}')
+        return('Cadastro excluído com sucesso!')
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code = 503, detail = f'Erro na exclusão do banco de dados: {e}')
+    
+
+
     
 #buscar número da conta pelo doc do cliente
 @app.get('/contas/numero/{documento}')

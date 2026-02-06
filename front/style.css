@@ -27,3 +27,17 @@ input, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; b
 .extra-fields { display: none; }
 .btn-submit { width: 100%; background: var(--pink-hot); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .result-area { margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; display: none; font-size: 0.9rem; color: var(--pink-dark); word-break: break-all; }
+.result-area, #output {
+    background: rgba(0, 0, 0, 0.05); /* Fundo levemente cinza */
+    color: #2c3e50;               /* Cor do texto escura */
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;        /* Mantém quebras de linha do JSON */
+    word-wrap: break-word;
+    border-left: 4px solid #4CAF50;
+    min-height: 20px;
+    display: none;                /* Começa escondido, o JS ativa */
+}
