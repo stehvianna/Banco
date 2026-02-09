@@ -206,9 +206,9 @@ def calcular_score_app(documento: str):
 def delete_cliente(id_cliente: str):
     try:
         #verifica o saldo da conta antes da exclusão
-        resposta_conta = requests.get(f'{URL_CORE_BANCO}/contas/{id_cliente}')
-        if resposta_conta.status_code != 200:
-            raise HTTPException(status_code = resposta_conta.status_code, detail = f'Erro inesperado: {resposta_conta.get('detail')}')
+        resposta_delete = requests.delete(f'{URL_CORE_BANCO}/clientes/{id_cliente}')
+        if resposta_delete.status_code != 200:
+            raise HTTPException(status_code = resposta_delete.status_code, detail = f'Erro inesperado.')
         return('Cadastro excluído com sucesso!')
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code = 503, detail = f'Erro na exclusão do banco de dados: {e}')

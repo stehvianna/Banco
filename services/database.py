@@ -143,36 +143,31 @@ def atualiza_cliente_db(documento: str, nome: str, telefone: str) -> Dict[str, A
 
 #exclui cliente
 def deletar_cliente(documento: str):
+    cliente = busca_cliente(documento)
+    if not cliente:
+        raise ValueError('Cliente não encontrado.')
     dados_conta = busca_conta(documento)
     if dados_conta:
-        saldo = dados_conta.get('saldo_cc', 0)
-    if float(saldo) > 0:
-        raise ValueError('Impossível excluir uma conta com saldo.')
+        saldo = float(dados_conta.get('saldo_cc', 0))
+        if saldo > 0:
+            raise ValueError('Impossível efetuar exclusão: ainda há saldo na conta.')
+        
     dados_investidor = busca_investidor_db(documento)
     if dados_investidor:
-        patrimonio = dados_investidor.get('patrimonio', 0)
-        if float(patrimonio) > 0:
-            raise ValueError('Impossível excluir cadastro: ainda há patrimônio investido.')
+        patrimonio = float(dados_investidor.get('patrimonio', 0))
+        if patrimonio > 0:
+            raise ValueError('Impossível efetuar exclusão: ainda há patrimônio investido.')
+        
     with get_connection() as conn:
         try:
             conn.execute("PRAGMA foreign_keys = ON;")
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM "contas" WHERE id_cliente = ?', (documento,))
-            cursor.execute('DELETE FROM "investidor" WHERE id_cliente = ?', (documento,))
             cursor.execute('DELETE FROM "clientes" WHERE documento = ?', (documento,))
-
-            if cursor.rowcount == 0:
-                print('Nenhum cliente encontrado com o CPF informado.')
-                return False
             conn.commit()
-            return True, 'Cliente excluído com sucesso!'
             return True
         except Exception as e:
             conn.rollback()
             raise e
-    
-
-
 
 #cria conta
 def nova_conta(id_cliente: str, saldo_cc: float) -> Dict[str, Any]:

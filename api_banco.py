@@ -71,12 +71,12 @@ def cadastro_cliente(nome: str, telefone: str, documento: str, correntista: bool
 @app.delete('/clientes/{id_cliente}')
 def excluir_cliente_api(id_cliente: str):
     try:
-        resultado = deletar_cliente(id_cliente)
+        deletar_cliente(id_cliente)
         return 'Cadastro excluído com sucesso.'
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=500, detail='Não foi possível deletar o cadastro.')
+    except ValueError as e:
+        raise HTTPException(status_code = 400, detail = str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail= f'Erro ao excluir cadastro: {e}')
 
     
 #criar contas
