@@ -41,3 +41,23 @@ input, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; b
     min-height: 20px;
     display: none;                /* Começa escondido, o JS ativa */
 }
+/* Estilo para o botão de voltar */
+.btn-back {
+    background: none;
+    border: none;
+    color: var(--pink-hot);
+    font-weight: bold;
+    cursor: pointer;
+    float: left;
+}
+
+.btn-invest {
+    border: 2px solid var(--pink-hot) !important;
+    background: white;
+}
+
+.modal-title {
+    color: var(--pink-dark);
+    text-align: center;
+    margin-bottom: 20px;
+}

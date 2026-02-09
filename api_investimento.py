@@ -4,7 +4,7 @@ from app import URL_CORE_BANCO, busca_investidor
 from services.cliente_investidor_service import validar_cliente_conta, validar_investidor
 from models.schemas import RENTABILIDADE_PERFIL, InvestidorIn, PerfilEnum, TipoEnum
 import requests
-from services.database import busca_investidor_db, cadastrar_investidor_db, atualiza_investidor_db, excluir_investidor_db, create_tables
+from services.database import busca_investidor_db, cadastrar_investidor_db, atualiza_investidor_db, create_tables
 from services.investimento_service import validacao_investimento
 from fastapi.middleware.cors import CORSMiddleware
 

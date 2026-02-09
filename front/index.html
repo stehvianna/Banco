@@ -28,15 +28,15 @@
                 </div>
             </section>
 
-            <section class="card">
-                <h2>Meus Investimentos</h2>
-                <div class="button-grid">
-                    <button class="btn" onclick="alert('Funcionalidade em desenvolvimento')"><span>🌟</span> Novo Investimento</button>
-                    <button class="btn" onclick="alert('Funcionalidade em desenvolvimento')"><span>📊</span> Ver Carteira</button>
-                </div>
-            </section>
-        </main>
+<section class="card">
+    <h2>Meus Investimentos</h2>
+    <div class="button-grid">
+        <button class="btn btn-invest" onclick="window.location.href='investimentos.html'">
+            <span>🚀</span> Portal de Investimentos
+        </button>
+        <button class="btn" onclick="abrirModal('modalCarteira')"><span>📊</span> Ver Carteira</button>
     </div>
+</section>
 
     <div id="modalCadastro" class="modal">
         <div class="modal-content glass-container">
@@ -100,9 +100,9 @@
             <span class="close-button" onclick="fecharModal('modalSaldo')">&times;</span>
             <h2 class="modal-title">Atualizar Saldo</h2>
             <form id="formSaldo">
-                <input type="text" id="s_conta" placeholder="Número da Conta" required>
-                <input type="number" step="0.01" id="s_valor" placeholder="Novo Saldo" required>
-                <button type="submit" class="btn-submit">Atualizar</button>
+                <input type="text" id="s_doc" placeholder="Digite o CPF do Cliente" required>
+                <input type="number" step="0.01" id="s_valor" placeholder="Novo Saldo (R$)" required>
+                <button type="submit" class="btn-submit">Atualizar Saldo</button>
             </form>
             <div id="resSaldo" class="result-area"></div>
         </div>
@@ -143,6 +143,7 @@
             <div id="resConta" class="result-area"></div>
         </div>
     </div>
+    
 
     <script src="script.js"></script>
 </body>

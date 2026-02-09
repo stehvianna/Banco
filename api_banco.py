@@ -118,12 +118,19 @@ def atualizar_cliente(documento: str, nome: str, telefone: str):
 
     
 #atualizar saldo da conta
-@app.patch('/contas/{numero_conta}/saldo')
-def atualizar_saldo(numero_conta: str, novo_saldo: float):
+@app.patch('/contas/{documento}/atualizar_saldo')
+def atualizar_saldo(documento: str, novo_saldo: float):
     try:
-        return atualizar_saldo_db(numero_conta, novo_saldo)
+        conta = busca_conta(documento)
+        if not conta:
+            raise ValueError(f'Nenhuma conta vinculada ao CPF {documento}')
+        elif conta:
+            numero_conta = conta.get('numero_conta')
+            atualizar_saldo_db(numero_conta, novo_saldo)
+        return(f'Saldo atualizado: R${novo_saldo}')
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao atualizar saldo: {e}")
+        raise e
+
     
 
 #criar investidor

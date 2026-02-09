@@ -94,20 +94,37 @@ document.getElementById("formExcluir").onsubmit = async (e) => {
     }
 };
 
-// --- 4. ATUALIZAR SALDO ---
+// --- 4. ATUALIZAR SALDO (SUBSTITUA ESTE BLOCO) ---
 document.getElementById("formSaldo").onsubmit = async (e) => {
     e.preventDefault();
-    const conta = document.getElementById("s_conta").value.trim();
+    
+    // Captura o documento do novo input s_doc
+    const documento = document.getElementById("s_doc").value.trim();
     const valor = document.getElementById("s_valor").value;
     const resDiv = document.getElementById("resSaldo");
+    
     resDiv.style.display = "block";
+    resDiv.innerText = "Processando...";
 
     try {
-        const res = await fetch(`${API_BASE}/contas/atualizar-saldo/${conta}?novo_saldo=${valor}`, { method: 'PATCH' });
+        // Agora enviamos o documento na URL conforme sua nova rota no app.py
+        const res = await fetch(`${API_BASE}/contas/atualizar-saldo/${documento}?novo_saldo=${valor}`, { 
+            method: 'PATCH' 
+        });
+        
         const data = await res.json();
-        resDiv.innerText = res.ok ? "Saldo atualizado!" : "Erro: " + data.detail;
+
+        if (res.ok) {
+            resDiv.style.color = "#2ecc71";
+            resDiv.innerText = "Saldo atualizado com sucesso!";
+            e.target.reset(); // Limpa o formulário
+        } else {
+            resDiv.style.color = "#e74c3c";
+            resDiv.innerText = "Erro: " + (data.detail || "Não foi possível atualizar.");
+        }
     } catch (err) {
-        resDiv.innerText = "Erro de conexão.";
+        resDiv.style.color = "#e74c3c";
+        resDiv.innerText = "Erro de conexão com o servidor.";
     }
 };
 
@@ -189,3 +206,40 @@ document.getElementById("formConta").onsubmit = async (e) => {
         resDiv.innerText = data['Conta: '] ? `Conta: ${data['Conta: ']}` : "Não localizada.";
     } catch (err) { resDiv.innerText = "Erro de conexão."; }
 };
+// --- PORTAL DE INVESTIMENTOS ---
+const formInvest = document.getElementById("formNovoInvest");
+if (formInvest) {
+    formInvest.onsubmit = async (e) => {
+        e.preventDefault();
+        const resDiv = document.getElementById("resNovoInvest");
+        resDiv.style.display = "block";
+        resDiv.innerText = "Processando aplicação...";
+
+        const payload = {
+            documento: document.getElementById("inv_doc").value,
+            tipo_ativo: document.getElementById("inv_tipo").value,
+            valor: parseFloat(document.getElementById("inv_valor").value)
+        };
+
+        try {
+            // Chamada para o seu endpoint de investimentos
+            const response = await fetch(`${API_BASE}/investimentos/novo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                resDiv.style.color = "#2ecc71";
+                resDiv.innerText = "Investimento realizado com sucesso!";
+                e.target.reset();
+            } else {
+                resDiv.style.color = "#e74c3c";
+                resDiv.innerText = "Erro: " + data.detail;
+            }
+        } catch (err) {
+            resDiv.innerText = "Erro ao conectar com a API de Investimentos.";
+        }
+    };
+}

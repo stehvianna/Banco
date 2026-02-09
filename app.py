@@ -148,19 +148,24 @@ def buscar_cliente_nome(nome: str):
     return resposta.json()
 
 
+
 #atualiza saldo da conta
-@app.patch('/contas/atualizar-saldo/{numero_conta}')
-def atualizar_saldo_app(numero_conta: str, novo_saldo: float):
-    params_saldo = {
-        "novo_saldo": novo_saldo
+@app.patch('/contas/atualizar-saldo/{documento}')
+def atualizar_saldo_app(documento: str, novo_saldo: float):
+    params_update_saldo = {
+        "novo_saldo" : novo_saldo
     }
     try:
-        resposta = requests.patch(f'{URL_CORE_BANCO}/contas/{numero_conta}/saldo', params = params_saldo)
+        resposta = requests.patch( f'{URL_CORE_BANCO}/contas/{documento}/atualizar_saldo', params = params_update_saldo)
         if resposta.status_code != 200:
             raise HTTPException(status_code = resposta.status_code, detail = 'Erro ao atualizar saldo.')
         return resposta.json()
     except requests.exceptions.ConnectionError:
-        raise HTTPException(status_code = 503, detail = 'Erro ao atualizar seu saldo.')
+        raise HTTPException(status_code = 503, detail = 'Erro de conexão.')
+    except Exception as e:
+        raise HTTPException(status_code = 500, detail = f'Erro desconhecido: {e}')
+    
+    
     
 #atualizar dados do cliente
 @app.patch('/clientes/atualizar/{documento}')
