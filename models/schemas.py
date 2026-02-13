@@ -3,21 +3,21 @@ from typing import List, Optional
 from enum import Enum
 
 class PerfilEnum(str, Enum):
-    conservador = 'CONSERVADOR'
-    moderado = 'MODERADO'
-    arrojado = 'ARROJADO'
+    CONSERVADOR = 'CONSERVADOR'
+    MODERADO = 'MODERADO'
+    ARROJADO = 'ARROJADO'
 
 RENTABILIDADE_PERFIL = {
-    PerfilEnum.conservador: 0.08,
-    PerfilEnum.moderado: 0.12,
-    PerfilEnum.arrojado: 0.18
+    PerfilEnum.CONSERVADOR: 0.08,
+    PerfilEnum.MODERADO: 0.12,
+    PerfilEnum.ARROJADO: 0.18
 }
 
 class TipoEnum(str, Enum):
-    renda_fixa = 'RENDA FIXA'
-    acoes = 'ACOES'
-    fundos = 'FUNDOS'
-    cripto = 'CRIPTO'
+    RENDA_FIXA = 'RENDA FIXA'
+    ACOES = 'ACOES'
+    FUNDOS = 'FUNDOS'
+    CRIPTO = 'CRIPTO'
 
 #sufixo IN: modelo p/ entrada dos dados
 class ClienteIn(BaseModel):

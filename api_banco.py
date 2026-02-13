@@ -25,7 +25,7 @@ from services.database import (
 from services.cliente_service import validar_cliente
 from services.conta_service import verificacao_conta
 from services.cliente_investidor_service import validar_cliente_conta, validar_investidor
-from models.schemas import ClienteIn, PerfilEnum, InvestidorIn, TipoEnum
+from models.schemas import RENTABILIDADE_PERFIL, ClienteIn, PerfilEnum, InvestidorIn, TipoEnum
 from services.investimento_service import validacao_investimento
 
 
@@ -68,10 +68,10 @@ def cadastro_cliente(nome: str, telefone: str, documento: str, correntista: bool
         raise HTTPException(status_code= 400, detail= f'Impossível cadastrar cliente. Erro: {e}')
 
 #excluir cliente
-@app.delete('/clientes/{id_cliente}')
-def excluir_cliente_api(id_cliente: str):
+@app.delete('/clientes/{documento}')
+def excluir_cliente_api(documento: str):
     try:
-        deletar_cliente(id_cliente)
+        deletar_cliente(documento)
         return 'Cadastro excluído com sucesso.'
     except ValueError as e:
         raise HTTPException(status_code = 400, detail = str(e))
@@ -81,9 +81,9 @@ def excluir_cliente_api(id_cliente: str):
     
 #criar contas
 @app.post('/contas')
-def criar_conta(id_cliente: str, saldo_cc: float = 0.0):
+def criar_conta(documento: str, saldo_cc: float = 0.0):
     try:
-        return verificacao_conta(id_cliente, saldo_cc)
+        return verificacao_conta(documento, saldo_cc)
     except Exception as e:
         raise HTTPException(status_code= 404, detail= f'Impossível criar conta. Erro: {e}')
 
@@ -135,18 +135,18 @@ def atualizar_saldo(documento: str, novo_saldo: float):
 
 #criar investidor
 @app.post('/investidor')
-def cadastro_investidor(id_cliente: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: PerfilEnum):
+def cadastro_investidor(documento: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: PerfilEnum):
     try:
-        investidor = cadastrar_investidor_db(id_cliente, nome, telefone, email, patrimonio, perfil.value)
+        investidor = cadastrar_investidor_db(documento, nome, telefone, email, patrimonio, perfil.value)
         return investidor
     except ValueError as e:
         raise HTTPException(status_code = 500, detail = f'Erro ao cadastrar investidor: {e}')
     
 #atualizar dados do investidor
-@app.patch('/investidor/{id_cliente}')
-def atualizar_investidor_banco(id_cliente: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: PerfilEnum):
+@app.patch('/investidor/{documento}')
+def atualizar_investidor_banco(documento: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: PerfilEnum):
     try:
-        investidor = atualiza_investidor_db(id_cliente, nome, telefone, email, patrimonio, perfil.value)
+        investidor = atualiza_investidor_db(documento, nome, telefone, email, patrimonio, perfil.value)
         if not investidor:
             raise HTTPException(status_code = 404, detail = 'Cadastro não encontrado.')
     except ValueError as e:
@@ -155,27 +155,43 @@ def atualizar_investidor_banco(id_cliente: str, nome: str, telefone: str, email:
         raise HTTPException(status_code = 500, detail = f'Erro ao atualizar cliente: {e}')
     
 #buscar investidor
-@app.get('/clientes/investidor/{id_cliente}')
-def procurar_investidor(id_cliente: str):
-    investidor = busca_investidor_db(id_cliente)
+@app.get('/clientes/investidor/{documento}')
+def procurar_investidor(documento: str):
+    investidor = busca_investidor_db(documento)
     if not investidor:
         raise HTTPException(status_code = 404, detail = 'Investidor não encontrado.')
     return investidor
 
 #novo investimento
 @app.post('/investimento/novo')
-def novo_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool, ticker: str = None):
+def novo_investimento(documento: str, tipo: str, valor_investido: float, ativo: bool, ticker: str = None):
+    if tipo == 'RENDA FIXA':
+        rentabilidade = RENTABILIDADE_PERFIL.get(busca_investidor_db(documento).get('perfil'))
+    else:
+        rentabilidade = 0.0
     try:
-        investimento = validacao_investimento(id_cliente, tipo, valor_investido, ativo, ticker)
-        if investimento:
-            investimento = novo_investimento_db(id_cliente, tipo, valor_investido, rentabilidade, ativo)
-        return investimento
+        resultado = novo_investimento_db(documento, tipo, valor_investido, rentabilidade, ativo, ticker)
+        return resultado
     except Exception as e:
-        raise HTTPException(status_code = 400, detail = f'Erro ao criar investimento: {e}')
+        raise HTTPException(status_code = 400, detail = f'Erro ao salvar investimento: {e}')
+    #     investidor = busca_investidor_db(documento)
+    #     if not investidor:
+    #         raise Exception("Investidor não encontrado")
+
+    #     valor_perfil = investidor.get('perfil')
+    #     perfil = str(valor_perfil).strip().upper()
+
+
+    #     if validacao_investimento(documento, tipo, valor_investido, ativo, ticker):
+    #         resultado = novo_investimento_db(documento, tipo, valor_investido, rentabilidade, ativo)
+    #         return resultado
+            
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=f'Erro ao criar investimento: {e}')
 
 #atualizar investimento
 @app.patch('investimento/atualizar/{id_investimento}')
-def atualizar_investimento(id_investimento: str, tipo: TipoEnum, valor_investido: float, ativo: bool):
+def atualizar_investimento(id_investimento: str, tipo: str, valor_investido: float, ativo: bool):
     tipo_investimento = busca_investimento_db(id_investimento).get('tipo')
     if tipo_investimento != 'RENDA_FIXA':
         raise ValueError('Impossível alterar investimentos em renda variável. Tente vender os ativos.')
@@ -200,23 +216,23 @@ def atualizar_investimento(id_investimento: str, tipo: TipoEnum, valor_investido
 
 #deletar investimento
 @app.delete('/investimento/excluir/{id_investimento}')
-def deletar_investimento(id_investimento: str, id_cliente: str, valor_investido: float):
+def deletar_investimento(id_investimento: str, documento: str, valor_investido: float):
     try:
         investimento = busca_investimento_db(id_investimento)
         if not investimento:
             raise HTTPException(status_code = 404, detail = 'Investimento não encontrado.')
-        retirada_investimento_db(id_investimento, valor_investido, id_cliente)
+        retirada_investimento_db(id_investimento, valor_investido, documento)
         return ('Investimento excluído com sucesso.')
     except Exception as e:
         raise HTTPException(status_code = 500, detail = f'Erro ao excluir investimento: {e}')
     
 #listar investimentos do cliente
-@app.get('/investimento/{id_cliente}')
-def investimentos_por_cliente(id_cliente: str):
+@app.get('/investimento/{documento}')
+def investimentos_por_cliente(documento: str):
     try:
-        lista_inv = busca_investimento_doc(id_cliente)
+        lista_inv = busca_investimento_doc(documento)
     except Exception as e:
-        raise HTTPException(status_code = 404, detail = f'Nenhum investimento encontrado para o CPF {id_cliente}')
+        raise HTTPException(status_code = 404, detail = f'Nenhum investimento encontrado para o CPF {documento}')
     return lista_inv
 
 

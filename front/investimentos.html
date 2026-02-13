@@ -38,18 +38,23 @@
             <span class="close-button" onclick="fecharModal('modalNovoInvest')">&times;</span>
             <h2 class="modal-title">Nova Aplicação</h2>
             <form id="formNovoInvest">
-                <input type="text" id="inv_doc" placeholder="CPF do Investidor" required>
-                <select id="inv_tipo" required>
-                    <option value="" disabled selected>Tipo de Ativo</option>
-                    <option value="RENDA_FIXA">Renda Fixa</option>
+                <select id="inv_tipo" required onchange="gerenciarCampoTicker()">
+                    <option value="" disabled selected>Selecione o Tipo</option>
+                    <option value="RENDA FIXA">Renda Fixa</option>
                     <option value="ACOES">Ações</option>
-                    <option value="FII">FIIs</option>
-                    <option value="CRIPTOS">Criptoativos</option>
+                    <option value="FUNDOS">Fundos</option>
+                    <option value="CRIPTO">Cripto</option>
                 </select>
-                <input type="number" step="0.01" id="inv_valor" placeholder="Valor do Aporte (R$)" required>
+
+                <div id="container_ticker" style="display: none; margin-bottom: 15px;">
+                    <input type="text" id="inv_ticker" placeholder="Digite o Ticker (Ex: PETR4)">
+                </div>
+
+                <input type="number" step="0.01" id="inv_valor" placeholder="Valor (R$)" required>
+                
                 <button type="submit" class="btn-submit">Confirmar Investimento</button>
             </form>
-            <div id="resNovoInvest" class="result-area"></div>
+            <div id="resNovoInvest" class="result-area" style="display:none; margin-top: 10px;"></div>
         </div>
     </div>
 

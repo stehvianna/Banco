@@ -28,15 +28,28 @@
                 </div>
             </section>
 
-<section class="card">
-    <h2>Meus Investimentos</h2>
-    <div class="button-grid">
-        <button class="btn btn-invest" onclick="window.location.href='investimentos.html'">
-            <span>🚀</span> Portal de Investimentos
-        </button>
-        <button class="btn" onclick="abrirModal('modalCarteira')"><span>📊</span> Ver Carteira</button>
+            <section class="card">
+                <h2>Meus Investimentos</h2>
+                <div class="button-grid">
+                    <button class="btn btn-invest" onclick="abrirModal('modalLoginInvest')">
+                        <span>🚀</span> Portal de Investimentos
+                    </button>
+                    <button class="btn" onclick="abrirModal('modalCarteira')"><span>📊</span> Ver Carteira</button>
+                </div>
+            </section>
+        </main>
     </div>
-</section>
+
+    <div id="modalLoginInvest" class="modal">
+        <div class="modal-content glass-container">
+            <span class="close-button" onclick="fecharModal('modalLoginInvest')">&times;</span>
+            <h2 class="modal-title">Acesso ao Portal</h2>
+            <p>Valide seu CPF de investidor para prosseguir</p>
+            <input type="text" id="login_doc_invest" placeholder="Digite seu CPF (apenas números)" required>
+            <button class="btn-submit" onclick="validarAcessoInvestidor()">Acessar Carteira</button>
+            <div id="resLoginInvest" class="result-area"></div>
+        </div>
+    </div>
 
     <div id="modalCadastro" class="modal">
         <div class="modal-content glass-container">
@@ -46,104 +59,27 @@
                 <input type="text" id="reg_nome" placeholder="Nome Completo" required>
                 <input type="text" id="reg_doc" placeholder="CPF/Documento" required>
                 <input type="text" id="reg_tel" placeholder="Telefone" required>
-                
                 <div class="selection-row">
                     <label><input type="checkbox" id="is_correntista"> Correntista</label>
                     <label><input type="checkbox" id="is_investidor"> Investidor</label>
                 </div>
-
                 <div id="extra_banco" class="extra-fields" style="display:none;">
-                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">A conta será criada com saldo R$ 0,00</p>
+                    <p style="font-size: 0.8rem; color: #666;">A conta será criada com saldo R$ 0,00</p>
                 </div>
-
                 <div id="extra_investimento" class="extra-fields" style="display:none;">
                     <input type="email" id="reg_email" placeholder="E-mail">
-                    <input type="number" step="0.01" id="reg_patrimonio" placeholder="Patrimônio Inicial (R$)">
+                    <input type="number" step="0.01" id="reg_patrimonio" placeholder="Patrimônio Inicial">
                     <select id="reg_perfil">
-                        <option value="" disabled selected>Selecione seu Perfil</option>
                         <option value="CONSERVADOR">Conservador</option>
                         <option value="MODERADO">Moderado</option>
                         <option value="ARROJADO">Arrojado</option>
                     </select>
                 </div>
-
                 <button type="submit" class="btn-submit">Finalizar Cadastro</button>
                 <div id="resCadastro" class="result-area"></div>
             </form>
         </div>
     </div>
-
-    <div id="modalBuscaNome" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalBuscaNome')">&times;</span>
-            <h2 class="modal-title">Procurar por Nome</h2>
-            <input type="text" id="busca_nome" placeholder="Digite o nome do cliente" required>
-            <button type="button" id="btnBuscarClientePorNome" class="btn-submit">Buscar Cliente</button>
-            <pre id="output" class="result-area" style="text-align: left; white-space: pre-wrap; font-size: 0.8rem;"></pre>
-        </div>
-    </div>
-
-    <div id="modalScore" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalScore')">&times;</span>
-            <h2 class="modal-title">Cálculo de Score</h2>
-            <form id="formScore">
-                <input type="text" id="score_input" placeholder="Informe o documento (CPF)" required>
-                <button type="submit" class="btn-submit">Calcular</button>
-            </form>
-            <div id="resScore" class="result-area"></div>
-        </div>
-    </div>
-
-    <div id="modalSaldo" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalSaldo')">&times;</span>
-            <h2 class="modal-title">Atualizar Saldo</h2>
-            <form id="formSaldo">
-                <input type="text" id="s_doc" placeholder="Digite o CPF do Cliente" required>
-                <input type="number" step="0.01" id="s_valor" placeholder="Novo Saldo (R$)" required>
-                <button type="submit" class="btn-submit">Atualizar Saldo</button>
-            </form>
-            <div id="resSaldo" class="result-area"></div>
-        </div>
-    </div>
-
-    <div id="modalExcluir" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalExcluir')">&times;</span>
-            <h2 class="modal-title" style="color: #e74c3c;">Encerrar Cadastro</h2>
-            <form id="formExcluir">
-                <input type="text" id="excluir_doc" placeholder="Confirme o CPF para excluir" required>
-                <button type="submit" class="btn-submit" style="background: #e74c3c;">Confirmar Exclusão Permanente</button>
-            </form>
-            <div id="resExcluir" class="result-area"></div>
-        </div>
-    </div>
-
-    <div id="modalBuscaDoc" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalBuscaDoc')">&times;</span>
-            <h2 class="modal-title">Buscar por Documento</h2>
-            <form id="formBuscaDoc">
-                <input type="text" id="b_doc" placeholder="Digite o CPF/Documento" required>
-                <button type="submit" class="btn-submit">Buscar</button>
-            </form>
-            <pre id="resBusca" class="result-area" style="text-align: left; white-space: pre-wrap; font-size: 0.8rem;"></pre>
-        </div>
-    </div>
-
-    <div id="modalConta" class="modal">
-        <div class="modal-content glass-container">
-            <span class="close-button" onclick="fecharModal('modalConta')">&times;</span>
-            <h2 class="modal-title">Consultar Número da Conta</h2>
-            <form id="formConta">
-                <input type="text" id="c_doc" placeholder="Documento do Titular" required>
-                <button type="submit" class="btn-submit">Localizar Conta</button>
-            </form>
-            <div id="resConta" class="result-area"></div>
-        </div>
-    </div>
-    
 
     <script src="script.js"></script>
 </body>

@@ -35,17 +35,17 @@ def create_tables() -> None:
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS "contas" (
-                id_cliente TEXT NOT NULL,
+                documento TEXT NOT NULL,
                 numero_conta TEXT PRIMARY KEY NOT NULL UNIQUE,
                 saldo_cc REAL NOT NULL DEFAULT 0.0,
-                FOREIGN KEY (id_cliente) REFERENCES clientes(documento) ON DELETE CASCADE
+                FOREIGN KEY (documento) REFERENCES clientes(documento) ON DELETE CASCADE
             );
             '''
         )
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS "investidor" (
-                id_cliente TEXT PRIMARY KEY NOT NULL,
+                documento TEXT PRIMARY KEY NOT NULL,
                 nome TEXT NOT NULL,
                 telefone TEXT NOT NULL,
                 perfil TEXT NOT NULL,
@@ -53,7 +53,7 @@ def create_tables() -> None:
                 patrimonio REAL NOT NULL DEFAULT 0.0,
                 data_cadastro TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
                 CONSTRAINT perfil_valido CHECK (perfil IN ('CONSERVADOR', 'MODERADO', 'ARROJADO')),
-                FOREIGN KEY (id_cliente) REFERENCES clientes(documento) ON DELETE CASCADE
+                FOREIGN KEY (documento) REFERENCES clientes(documento) ON DELETE CASCADE
             );
             '''
         )
@@ -61,7 +61,7 @@ def create_tables() -> None:
             '''
             CREATE TABLE IF NOT EXISTS "investimento" (
                 id_investimento TEXT PRIMARY KEY NOT NULL UNIQUE,
-                id_cliente TEXT NOT NULL,
+                documento TEXT NOT NULL,
                 tipo TEXT NOT NULL,
                 ticker TEXT,
                 valor_investido REAL NOT NULL DEFAULT 0.0,
@@ -170,23 +170,23 @@ def deletar_cliente(documento: str):
             raise e
 
 #cria conta
-def nova_conta(id_cliente: str, saldo_cc: float) -> Dict[str, Any]:
+def nova_conta(documento: str, saldo_cc: float) -> Dict[str, Any]:
     with get_connection() as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
         cursor = conn.cursor()
         #verificar se o cliente está cadastrado
         cursor.execute(
                 'SELECT 1 FROM "clientes" WHERE documento = ?',
-                (id_cliente,)
+                (documento,)
         )
 
         if cursor.fetchone() is None:
-            raise ValueError(f'Nenhum cliente cadastrado com o CPF: {id_cliente}')
+            raise ValueError(f'Nenhum cliente cadastrado com o CPF: {documento}')
         numero_conta = str(int(uuid.uuid4().int % 10 ** 8)).zfill(8)
         try:
             cursor.execute(
-                'INSERT INTO "contas" (id_cliente, numero_conta, saldo_cc) VALUES (?,?,?)',
-                (id_cliente, numero_conta, saldo_cc)
+                'INSERT INTO "contas" (documento, numero_conta, saldo_cc) VALUES (?,?,?)',
+                (documento, numero_conta, saldo_cc)
             )
         except sqlite3.IntegrityError as e:
             raise ValueError(f'Impossível criar conta: {e}')
@@ -205,7 +205,7 @@ def busca_conta(documento: str):
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            'SELECT * FROM "contas" WHERE id_cliente = ?',
+            'SELECT * FROM "contas" WHERE documento = ?',
             (documento,)
         )
         row = cursor.fetchone()
@@ -235,66 +235,66 @@ def atualizar_saldo_db(numero_conta: str, novo_saldo: float) -> Dict[str, Any]:
             raise ValueError(f'Conta não encontrada.')
         
 #cadastro do investidor
-def cadastrar_investidor_db(id_cliente: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: str):
+def cadastrar_investidor_db(documento: str, nome: str, telefone: str, email: str, patrimonio: float, perfil: str):
     with get_connection() as conn:
         cursor = conn.cursor() 
         try:
             cursor.execute(
-                'INSERT INTO "investidor" (id_cliente, nome, telefone, email, patrimonio, perfil) VALUES (?, ?, ?, ?, ?, ?)',
-                (id_cliente, nome, telefone, email, patrimonio, perfil)
+                'INSERT INTO "investidor" (documento, nome, telefone, email, patrimonio, perfil) VALUES (?, ?, ?, ?, ?, ?)',
+                (documento, nome, telefone, email, patrimonio, perfil)
             )
             conn.commit()
-            cursor.execute('SELECT * FROM "investidor" WHERE id_cliente = ?', (id_cliente,))
+            cursor.execute('SELECT * FROM "investidor" WHERE documento = ?', (documento,))
             row = cursor.fetchone()
             if row:
                 return dict(row)
             else:
                 return None
         except sqlite3.IntegrityError:
-            raise ValueError(f'O investidor com CPF {id_cliente} já possui cadastro.')
+            raise ValueError(f'O investidor com CPF {documento} já possui cadastro.')
 
 
 #atualizar dados do investidor
-def atualiza_investidor_db(id_cliente: str, telefone: str, email: str, patrimonio: float, perfil: str):
+def atualiza_investidor_db(documento: str, telefone: str, email: str, patrimonio: float, perfil: str):
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            'UPDATE "investidor" SET telefone = ?, email = ?, patrimonio = ?, perfil = ? WHERE id_cliente = ?',
-            (telefone, email, patrimonio, perfil, id_cliente)
+            'UPDATE "investidor" SET telefone = ?, email = ?, patrimonio = ?, perfil = ? WHERE documento = ?',
+            (telefone, email, patrimonio, perfil, documento)
         )
         conn.commit()
         if cursor.rowcount == 0:
             return None
-        return(f'Cliente atualizado: \n CPF: {id_cliente}, \n Email: {email}, \n Telefone: {telefone}, \n Patrimônio: {patrimonio}, \n Perfil: {perfil}')
+        return(f'Cliente atualizado: \n CPF: {documento}, \n Email: {email}, \n Telefone: {telefone}, \n Patrimônio: {patrimonio}, \n Perfil: {perfil}')
 
        
 #buscar cadastro do investidor pelo documento
-def busca_investidor_db(id_cliente: str):
+def busca_investidor_db(documento: str):
     with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute('SELECT id_cliente, nome, telefone, email, perfil FROM "investidor" WHERE id_cliente = ?', (id_cliente,))
+        cursor.execute('SELECT documento, nome, perfil FROM "investidor" WHERE documento = ?', (documento,))
         row = cursor.fetchone()
 
         if row:
             return dict(row)
-        else:
-            return None
+        return None
         
 
 #criar novo investimento
-def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool, ticker: str = None):
+def novo_investimento_db(documento: str, tipo: TipoEnum, valor_investido: float, rentabilidade: float, ativo: bool, ticker: str = None):
     ativo = 1 if ativo else 0
     id_investimento = str(uuid.uuid4())
     with get_connection() as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
         #antes de criar o investimento, verificar se o cliente existe e se é investidor
         cursor = conn.cursor()
-        cursor.execute('SELECT 1 FROM "investidor" WHERE id_cliente = ?', (id_cliente,))
+        cursor.execute('SELECT 1 FROM "investidor" WHERE documento = ?', (documento,))
         if cursor.fetchone() is None:
-            raise ValueError(f'O CPF {id_cliente} não está associado à nenhum investidor.')
+            raise ValueError(f'O CPF {documento} não está associado à nenhum investidor.')
         #verificar se o cliente tem saldo disponível para investir
         try:
-            saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+            saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE documento = ?', (documento,)).fetchone()
             saldo = float(saldo[0])
             if valor_investido > saldo:
                 raise ValueError('Saldo insuficiente para realizar o investimento.')
@@ -306,8 +306,8 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
 
         try:
             cursor.execute(
-                'INSERT INTO "investimento" (id_investimento, id_cliente, tipo, ticker, valor_investido, rentabilidade, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-                (id_investimento, id_cliente, tipo, ticker, valor_investido, rentabilidade, ativo) 
+                'INSERT INTO "investimento" (id_investimento, documento, tipo, ticker, valor_investido, rentabilidade, ativo) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+                (id_investimento, documento, tipo, ticker, valor_investido, rentabilidade, ativo) 
             )
         except sqlite3.IntegrityError as e:
             raise ValueError(f'Impossível criar investimento: {e}')
@@ -316,14 +316,14 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
         cursor.execute('SELECT * FROM "investimento" WHERE id_investimento = ?', (id_investimento,))
         row = cursor.fetchone()
         
-        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE documento = ?', (documento,)).fetchone()
         patrimonio = float(patrimonio[0])
 
 
         patrimonio += valor_investido
         if row:
-            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE id_cliente = ?', (saldo, id_cliente,))
-            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE id_cliente = ?', (patrimonio, id_cliente,))
+            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE documento = ?', (saldo, documento,))
+            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE documento = ?', (patrimonio, documento,))
             conn.commit()
 
         return dict(row)
@@ -332,7 +332,7 @@ def novo_investimento_db(id_cliente: str, tipo: TipoEnum, valor_investido: float
 def busca_investimento_db(id_investimento: str):
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT id_investimento, id_cliente, ticker,  valor_investido, rentabilidade, data_aplicacao, tipo, ativo FROM "investimento" where id_investimento = ?', (id_investimento,))
+        cursor.execute('SELECT id_investimento, documento, ticker,  valor_investido, rentabilidade, data_aplicacao, tipo, ativo FROM "investimento" where id_investimento = ?', (id_investimento,))
         row = cursor.fetchone()
         if row:
             return dict(row)
@@ -340,11 +340,11 @@ def busca_investimento_db(id_investimento: str):
             return None
         
 #buscar investimento pelo doc do cliente
-def busca_investimento_doc(id_cliente: str):
+def busca_investimento_doc(documento: str):
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            'SELECT * FROM "investimento" WHERE id_cliente = ?', (id_cliente,)
+            'SELECT * FROM "investimento" WHERE documento = ?', (documento,)
         )
         rows = cursor.fetchall()
         if rows:
@@ -353,10 +353,10 @@ def busca_investimento_doc(id_cliente: str):
             return None
 
 #atualizar dados do investimentoados do investimento
-def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bool, tipo: TipoEnum, id_cliente: str):
+def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bool, tipo: TipoEnum, documento: str):
     with get_connection() as conn:
         cursor = conn.cursor()
-        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+        patrimonio = cursor.execute('SELECT patrimonio from "investidor" WHERE documento = ?', (documento,)).fetchone()
         patrimonio = float(patrimonio[0])
         valor_investido = cursor.execute('SELECT valor_investido from "investimento" WHERE id_investimento = ?', (id_investimento,)).fetchone()
         valor_investido = float(valor_investido[0])
@@ -364,7 +364,7 @@ def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bo
 
         if tipo == 'RENDA FIXA':
             try:
-                saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE id_cliente = ?', (id_cliente,)).fetchone()
+                saldo = cursor.execute('SELECT saldo_cc FROM "contas" WHERE documento = ?', (documento,)).fetchone()
                 saldo = float(saldo[0])
                 if novo_valor > saldo:
                     raise ValueError('Saldo insuficiente para realizar o investimento.')
@@ -379,7 +379,7 @@ def atualiza_investimento_db(id_investimento: str,  novo_valor: float, ativo: bo
     
     
 # #excluir investimento
-def retirada_investimento_db(id_investimento: str, valor_retirada: float, id_cliente: str):
+def retirada_investimento_db(id_investimento: str, valor_retirada: float, documento: str):
     valor = busca_investimento_db(id_investimento).get('valor_investido')
     valor = float(valor)
     #verifica se a retirada é maior do que o valor investido
@@ -387,8 +387,8 @@ def retirada_investimento_db(id_investimento: str, valor_retirada: float, id_cli
         raise Exception('Saldo insuficiente para retirada.')
     else:
         valor -= valor_retirada
-        saldo_conta_atualizado = busca_conta(id_cliente).get('saldo_cc') + valor_retirada
-        patrimonio_atualizado = busca_investidor_db(id_cliente).get('patrimonio') - valor
+        saldo_conta_atualizado = busca_conta(documento).get('saldo_cc') + valor_retirada
+        patrimonio_atualizado = busca_investidor_db(documento).get('patrimonio') - valor
 
         with get_connection() as conn:
             conn.execute("PRAGMA foreign_keys = ON;")
@@ -397,9 +397,9 @@ def retirada_investimento_db(id_investimento: str, valor_retirada: float, id_cli
                 'UPDATE "investimentos" SET valor_investido = ? WHERE id_investimento = ?', (valor, id_investimento,)
             )
             #atualizar o saldo da conta com o valor do saque
-            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE id_cliente = ?', (saldo_conta_atualizado, id_cliente,))
+            cursor.execute('UPDATE "contas" SET saldo_cc = ? WHERE documento = ?', (saldo_conta_atualizado, documento,))
             #atualizar patrimonio do investidor
-            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE id_cliente = ?', (patrimonio_atualizado, id_cliente,))
+            cursor.execute('UPDATE "investidor" SET patrimonio = ? WHERE documento = ?', (patrimonio_atualizado, documento,))
 
             conn.commit()
         return (f'Uma retirada no valor de R${valor} foi iniciada. Verifique o saldo em conta.')

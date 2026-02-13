@@ -1,11 +1,11 @@
-from multiprocessing import Value
+
 from models.schemas import TipoEnum, RENTABILIDADE_PERFIL
 from .cliente_investidor_service import validar_investidor
 from .market_service import validar_ticker
 from.database import busca_investidor_db, busca_conta, novo_investimento_db, busca_investimento_db, atualiza_investidor_db
 
-def validar_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, ticker: str = None):
-    if not id_cliente or len(id_cliente) != 11:
+def validar_investimento(documento: str, tipo: TipoEnum, valor_investido: float, ticker: str = None):
+    if not documento or len(documento) != 11:
         raise ValueError('Insira um CPF válido.')
     if not tipo or tipo not in TipoEnum:
         raise ValueError('Tipo de investimento inválido.')
@@ -14,20 +14,20 @@ def validar_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float
     #se o investimento NÃO for renda fixa, o ticker é obrigatório
     if tipo != TipoEnum.RENDA_FIXA:
         if not ticker:
-            raise ValueError(f'O campo "ticker" é obrigatório para investimentos do tipo {tipo.value}.')
+            raise ValueError(f'O campo "ticker" é obrigatório para investimentos do tipo {tipo}.')
         if not validar_ticker(ticker):
             raise ValueError('Erro ao validar ticker. Verifique os dados informados.')
     #validar se o cliente tem saldo para investir o valor
-    if busca_conta(id_cliente).get('saldo_cc') < valor_investido:
+    if busca_conta(documento).get('saldo_cc') < valor_investido:
         raise ValueError('Saldo insuficiente para realizar o investimento.')
     
 
     return True
     
-def validacao_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: float, ativo: bool, ticker: str = None):
+def validacao_investimento(documento: str, tipo: TipoEnum, valor_investido: float, ativo: bool, ticker: str = None):
 
-    if validar_investimento(id_cliente, tipo, valor_investido):
-        investidor = busca_investidor_db(id_cliente)
+    if validar_investimento(documento, tipo, valor_investido, ticker):
+        investidor = busca_investidor_db(documento)
         if not investidor:
             raise ValueError('Investidor não encontrado.')
         
@@ -39,6 +39,12 @@ def validacao_investimento(id_cliente: str, tipo: TipoEnum, valor_investido: flo
             rentabilidade = None
         
 
-        investimento = novo_investimento_db(id_cliente, tipo, valor_investido, rentabilidade, ativo, ticker)
-
-        return investimento
+        
+        return {
+            "documento" : documento,
+            "tipo" : tipo,
+            "valor_investido" : valor_investido,
+            "rentabilidade" : rentabilidade,
+            "ativo" : ativo,
+            "ticker" : ticker
+        }

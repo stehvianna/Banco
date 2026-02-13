@@ -68,7 +68,7 @@ def cadastrar_cliente(nome: str, telefone: str, documento: str, correntista: boo
 
     if correntista:
         params_conta = {
-            "id_cliente": cliente_salvo['documento'],
+            "documento": cliente_salvo['documento'],
             "saldo_cc": 0.0
         }
         try:
@@ -93,7 +93,7 @@ def cadastrar_cliente(nome: str, telefone: str, documento: str, correntista: boo
             investidor_salvo = checagem_investidor.json()
         else:
             params_investidor = {
-                "id_cliente": documento,
+                "documento": documento,
                 "nome": nome,
                 "telefone": telefone,
                 "email": email,
@@ -116,9 +116,9 @@ def cadastrar_cliente(nome: str, telefone: str, documento: str, correntista: boo
 
 #criar contas
 @app.post('/contas/criar_conta')
-def criar_nova_conta(id_cliente: str, saldo_cc: float = 0.0):
+def criar_nova_conta(documento: str, saldo_cc: float = 0.0):
     params_conta = {
-        "id_cliente": id_cliente,
+        "documento": documento,
         "saldo_cc": saldo_cc
     }
     resposta = requests.post(f'{URL_CORE_BANCO}/contas', params = params_conta)
@@ -207,11 +207,11 @@ def calcular_score_app(documento: str):
         raise HTTPException(status_code=503, detail=f"Erro de conexão com o servidor api_banco: {e}")
 
 #excluir cadastro
-@app.delete('/clientes/excluir/{id_cliente}')
-def delete_cliente(id_cliente: str):
+@app.delete('/clientes/excluir/{documento}')
+def delete_cliente(documento: str):
     try:
         #verifica o saldo da conta antes da exclusão
-        resposta_delete = requests.delete(f'{URL_CORE_BANCO}/clientes/{id_cliente}')
+        resposta_delete = requests.delete(f'{URL_CORE_BANCO}/clientes/{documento}')
         if resposta_delete.status_code != 200:
             raise HTTPException(status_code = resposta_delete.status_code, detail = f'Erro inesperado.')
         return('Cadastro excluído com sucesso!')
@@ -231,10 +231,10 @@ def buscar_numero_conta(documento: str):
     return {'Conta: ': dados_conta['numero_conta']}
 
 #buscar inestidor
-@app.get('/investidor/{id_cliente}')
-def busca_investidor(id_cliente: str):
+@app.get('/investidor/{documento}')
+def busca_investidor(documento: str):
     try:
-        resposta = requests.get(f'{URL_CORE_BANCO}/clientes/investidor/{id_cliente}')
+        resposta = requests.get(f'{URL_CORE_BANCO}/clientes/investidor/{documento}')
         if resposta.status_code == 404:
             raise HTTPException(status_code = 404, detail = 'Nenhum investidor encontrado.')
         return resposta.json()
